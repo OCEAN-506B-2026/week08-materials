@@ -1,0 +1,104 @@
+---
+title: "Mixed effect model selection"
+author: "Wing-Ho Ko"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Loading packages
+
+```{r}
+library(tidyverse)
+library(lme4)
+library(lmerTest)
+library(varTestnlme)
+library(broom)
+library(broom.mixed)
+```
+
+
+## Loading dataset
+
+```{r}
+fish <- read_csv("data/fishdata.csv")
+glimpse(fish)
+```
+
+## Determining the fixed effect component
+
+Consider a step-up strategy. We first construct a suitable fixed-effect model as starting point, which we can automate using `step()`
+
+```{r}
+fish_lm0 <- lm(Trophic_Pos ~ Fish_Length, fish)
+fish_lm1 <- step(fish_lm0, Trophic_Pos ~ Fish_Length * Fish_Species)
+```
+
+## Determining the random effect component
+
+So our starting fixed-effect model is the fully interacting model between fish length and fish species. Now consider adding random effect associated with lake
+
+```{r}
+fish_lmm1 <- lmer(
+  Trophic_Pos ~ Fish_Length * Fish_Species + (1 | Lake),
+  fish, 
+  REML=FALSE
+)
+summary(fish_lmm1)
+```
+
+Since the difference between `fish_lm1` and `fish_lmm1` is a variance component and at null hypothesis its value lie on the boundary of parameter space, we use `varCompTest()` to compare the two models
+
+```{r}
+varCompTest(fish_lmm1, fish_lm1)
+```
+
+```{r}
+AIC(fish_lmm1, fish_lm1)
+```
+
+
+So the random factor is improving the model. Next we can include additional random effect, for example:
+
+```{r}
+fish_lmm2 <- lmer(
+  Trophic_Pos ~ Fish_Length * Fish_Species + (Fish_Length || Lake),
+  fish, 
+  REML=FALSE
+)
+summary(fish_lmm2)
+```
+
+```{r}
+fish_lmm3 <- lmer(
+  Trophic_Pos ~ Fish_Length * Fish_Species + (Fish_Species | Lake),
+  fish, 
+  REML=FALSE
+)
+
+summary(fish_lmm3)
+```
+
+Both of these models struggle numerically. Nevertheless, let's continue checking with `varCompTest()`:
+
+```{r}
+varCompTest(fish_lmm2, fish_lmm1)
+```
+
+```{r}
+AIC(fish_lmm2, fish_lmm1)
+```
+
+
+```{r}
+varCompTest(fish_lmm3, fish_lmm1)
+```
+
+```{r}
+AIC(fish_lmm3, fish_lmm1)
+```
+
+So from both `AIC()` and `varCompTest()` we should not include any of the additional random effect terms.
+
+

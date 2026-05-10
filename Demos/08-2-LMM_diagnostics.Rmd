@@ -1,0 +1,83 @@
+---
+title: "Mixed effect model diagnostics"
+author: "Wing-Ho Ko"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Loading packages
+
+```{r}
+library(tidyverse)
+library(lme4)
+library(lmerTest)
+library(varTestnlme)
+library(broom)
+library(broom.mixed)
+```
+
+
+## Loading dataset
+
+```{r}
+fish <- read_csv("data/fishdata.csv")
+glimpse(fish)
+```
+
+## Fitting final model
+
+```{r}
+fish_lmm <- lmer(
+  Trophic_Pos ~ Fish_Length * Fish_Species + (1 | Lake),
+  fish
+)
+summary(fish_lmm)
+```
+
+Note that our final model has no convergence or singularity issues.
+
+## Diagnostics
+
+The overall residual plot
+
+```{r}
+ggplot() + geom_point(aes(x=fitted(fish_lmm), y=resid(fish_lmm))) 
+```
+
+The overall Q-Q plot:
+
+```{r}
+ggplot(mapping=aes(sample=resid(fish_lmm))) + 
+  geom_qq() + geom_qq_line() 
+```
+
+Plots of residuals faceted by random factor level
+
+```{r}
+ggplot(fish) + geom_point(aes(x=fitted(fish_lmm), y=resid(fish_lmm))) +
+  facet_wrap(vars(Lake))
+```
+
+Q-Q plots faceted by random factor level
+
+```{r}
+ggplot(fish, aes(sample=resid(fish_lmm))) + 
+  geom_qq() + geom_qq_line() + facet_wrap(vars(Lake)) 
+```
+
+We see no strong violations on homoscedasticity or normality 
+
+Check the distribution of random factor
+
+```{r}
+fish_ranef <- ranef(fish_lmm)$Lake
+```
+
+```{r}
+ggplot(mapping=aes(sample=fish_ranef[["(Intercept)"]])) + 
+  geom_qq() + geom_qq_line()
+```
+
+There is some sign of heavy tails, but that's unlikely to cause any real troubles.

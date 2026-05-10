@@ -1,0 +1,232 @@
+---
+title: "Mixed effect model predictions"
+author: "Wing-Ho Ko"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Loading packages
+
+```{r}
+library(tidyverse)
+library(lme4)
+library(lmerTest)
+library(varTestnlme)
+library(broom)
+library(broom.mixed)
+library(ciTools)
+```
+
+## Loading dataset
+
+```{r}
+fish <- read_csv("data/fishdata.csv")
+fish_sub <- fish |> filter(Fish_Species=="S1")
+glimpse(fish_sub)
+```
+
+## Fitting a simple mixed model
+
+```{r}
+fish_lmm <- lmer(
+  Trophic_Pos ~ Fish_Length + (1 | Lake),
+  fish_sub
+)
+summary(fish_lmm)
+```
+
+## Prediction about the mean response
+
+### Marginal prediction
+
+Creating the data frame upon which our prediction will run
+
+```{r}
+fish_all_new <- data.frame(
+  Fish_Length = seq(80, 430, 10)  
+)
+```
+
+Making marginal prediction
+
+```{r}
+fish_marg_pred <- predict(fish_lmm, fish_all_new, re.form=NA)
+fish_marg_pred <- cbind(fish_all_new, fish_marg_pred) |>
+  rename(pred = fish_marg_pred)
+```
+
+Plot the observed data with the prediction
+
+```{r}
+ggplot(fish_sub) + 
+  geom_point(aes(
+    x=Fish_Length, y=Trophic_Pos, 
+    color=Lake, shape=Lake
+  )) + geom_line(
+    aes(x=Fish_Length, y=pred), fish_marg_pred
+  ) 
+```
+
+### Conditional prediction
+
+Set up the data frame for lake-specific predictions:
+
+```{r}
+lakes <- distinct(fish_sub, Lake)$Lake
+lengths <- seq(80, 430, 10)
+
+fish_new <- data.frame(
+  Fish_Length = rep(lengths, each=length(lakes)),
+  Lake = rep(lakes, times=length(lengths))
+)
+```
+
+Make Lake-specific predictions:
+
+```{r}
+fish_cond_pred <- predict(fish_lmm, fish_new)
+fish_cond_pred <- cbind(fish_new, fish_cond_pred) |>
+  rename(pred = fish_cond_pred)
+```
+
+Plot the results
+
+```{r}
+ggplot(
+  fish_sub, 
+  aes(x=Fish_Length, y=Trophic_Pos, color=Lake, shape=Lake)
+) + geom_point() +
+  geom_line(
+    aes(y=pred),
+    data=fish_cond_pred
+  ) + geom_line(
+    aes(y=pred, color=NULL, shape=NULL), 
+    fish_marg_pred
+  ) 
+```
+
+Observe that the fitted line for L4 is closer to the unconditional prediction than the data alone would suggest. This is an example of shrinkage: our a priori knowledge (or assumption) that the lakes factor are normally distributed means that we don't expect extreme deviation from the mean random effect (which is zero)
+
+## Confidence intervals
+
+### Marginal prediction
+
+```{r}
+fish_marg_confint <- add_ci(
+  fish_all_new, fish_lmm, 
+  type="parametric",
+  includeRanef=FALSE
+)
+fish_marg_confint
+```
+
+```{r}
+ggplot(fish_sub) + 
+  geom_ribbon(
+    aes(x=Fish_Length, ymin=LCB0.025, ymax=UCB0.975), 
+    data=fish_marg_confint,
+    fill="gray", alpha=0.5
+  ) + geom_line(
+    aes(x=Fish_Length, y=pred), fish_marg_pred
+  ) + geom_point(aes(
+    x=Fish_Length, y=Trophic_Pos, 
+    color=Lake, shape=Lake
+  ))
+```
+
+### Conditional prediction
+
+```{r}
+fish_cond_confint <- add_ci(
+  fish_new, fish_lmm, 
+  type="parametric",
+  includeRanef=TRUE
+)
+fish_cond_confint
+```
+
+```{r}
+ggplot(fish_sub) + 
+  geom_ribbon(
+    aes(x=Fish_Length, ymin=LCB0.025, ymax=UCB0.975, fill=Lake, color=Lake), 
+    data=fish_cond_confint,
+    alpha=0.5
+  ) + geom_line(
+    aes(x=Fish_Length, y=pred, color=Lake), 
+    fish_cond_pred
+  ) + geom_point(aes(
+    x=Fish_Length, y=Trophic_Pos, 
+    color=Lake, shape=Lake
+  )) + 
+  geom_ribbon(
+    aes(x=Fish_Length, ymin=LCB0.025, ymax=UCB0.975), 
+    data=fish_marg_confint,
+    fill="gray", alpha=0.5
+  ) + geom_line(
+    aes(x=Fish_Length, y=pred), fish_marg_pred
+  ) + facet_wrap(vars(Lake))
+```
+
+## Prediction interval
+
+### Marginal prediction
+
+```{r}
+fish_marg_predint <- add_pi(
+  fish_all_new, fish_lmm, 
+  type="parametric",
+  includeRanef=FALSE
+)
+fish_marg_predint
+```
+
+```{r}
+ggplot(fish_sub) + 
+  geom_ribbon(
+    aes(x=Fish_Length, ymin=LPB0.025, ymax=UPB0.975), 
+    data=fish_marg_predint,
+    fill="gray", alpha=0.5
+  ) + geom_line(
+    aes(x=Fish_Length, y=pred), fish_marg_pred
+  ) + geom_point(aes(
+    x=Fish_Length, y=Trophic_Pos, 
+    color=Lake, shape=Lake
+  ))
+```
+
+### Conditional prediction
+
+```{r}
+fish_cond_predint <- add_pi(
+  fish_new, fish_lmm, 
+  type="parametric",
+  includeRanef=TRUE
+)
+fish_cond_predint
+```
+
+```{r}
+ggplot(fish_sub) + 
+  geom_ribbon(
+    aes(x=Fish_Length, ymin=LPB0.025, ymax=UPB0.975, fill=Lake, color=Lake), 
+    data=fish_cond_predint,
+    alpha=0.5
+  ) + geom_line(
+    aes(x=Fish_Length, y=pred, color=Lake), 
+    fish_cond_pred
+  ) + geom_point(aes(
+    x=Fish_Length, y=Trophic_Pos, 
+    color=Lake, shape=Lake
+  )) +
+  geom_ribbon(
+    aes(x=Fish_Length, ymin=LPB0.025, ymax=UPB0.975), 
+    data=fish_marg_predint,
+    fill="gray", alpha=0.5
+  ) + geom_line(
+    aes(x=Fish_Length, y=pred), fish_marg_pred
+  ) + facet_wrap(vars(Lake))
+```
+
+

@@ -1,0 +1,104 @@
+---
+title: "Week 8 Exercises"
+author: "Wing-Ho Ko"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Loading packages
+
+```{r}
+
+```
+
+
+## Exercise 1: LMM model selection on rat pup dataset
+
+Consider again the rat pup dataset. We'll perform model selection in the following order:
+
+```{r}
+data(RatPupWeight, package="nlme")
+ratpup <- as.data.frame(RatPupWeight) |> mutate(
+  Litter = factor(Litter, ordered=FALSE), 
+  Treatment = factor(Treatment, ordered=FALSE)
+) 
+
+glimpse(ratpup)
+```
+
+1. Determine an appropriate fixed-effect model. Start with a model for which the effects of sex, Treatment, and litter size are additive. Consider adding interactions. Use `step()` to determine the "best" fixed-effect model
+
+2. Now fit a model in which the random effect of litter on the intercept is added. Print out the resulting summary.
+
+3. Now you should see that the interaction becomes insignificant. So let's first perform a nested model hypothesis test to see if it is wise to include the interaction. Based on your results revise your "best" linear mixed model for the situation
+
+4. Now let's consider adding random effect on the sex variable. Test the associated hypothesis to determine whether the additional random effect is warranted.
+
+
+## Exercise 2: LMM diagnostics on rat pup dataset
+
+For the final model you obtained in Exercise 4,
+
+1. Plot the conditional residuals against the fitted value.
+
+2. Make a Q-Q plot of the residuals against the theoretical normal distribution
+
+3. Make a Q-Q plot of the random effect intercepts against the theoretical normal distribution
+
+4. Based on what you observed from the output of 1-3, are there any concerns about our final model?
+
+
+## Exercise 3: LMM prediction on rat pup dataset
+
+Again use the rat pup dataset. We will consider the mixed effect model `weight ~ sex + Treatment + Lsize + (1|Litter)`
+
+```{r}
+data(RatPupWeight, package="nlme")
+ratpup <- as.data.frame(RatPupWeight) |> mutate(
+  Litter = factor(Litter, ordered=FALSE), 
+  Treatment = factor(Treatment, ordered=FALSE)
+) 
+```
+
+1. Fix litter size at the median. For each combination sex and Treatment, and for an unspecified (and possibly previously unobserved) litter, predict the mean pup weight and provide its uncertainty. Visualize the result in a plot with error bar
+
+2. Suppose the female rat producing litter #5 was latter given a low treatment dose and gave birth to 7 pups (i.e., `Lsize` = 7). What is the range of birth weights of rat pup (covering up to 95% chance) expected of each sex? Again visualize the result with a plot.
+
+
+## Exercise 4: Going beyond linear model
+
+Consider the plots of the 2 datasets shown in the files `glm_dataset_a.png` and `glm_dataset_b.png`, where y is the outcome variable and x is a continuous explanatory variable. Explain why linear regression is a bad choice for modeling the data.
+
+
+## Exercise 5: insecticides, take 1
+
+An experiment exposed batches of insects to various deposits (in mg) of insecticides. The proportion of insects 𝑦 killed after six days of exposure in each batch of size 𝑚 is potentially a function of the dose of insecticide and the type of insecticide. The dataset is included in the file insectsicides.csv in the data folder.
+
+```{r}
+insects_raw <- read_csv("data/insecticides.csv")
+```
+
+1. Perform a logistic regression to investigate the dependence of proportion of insects killed with (the log of) the amount of deposit and the type of insecticide. Ignore the interaction between the two for the time being.
+
+2. Is the dosage statistically significant? Is the difference between the type of insecticide statistically significant? (Again, to answer the second question you have to treat the variable as a whole)
+
+3. By what factor would the odds change when the dosage is doubled?
+
+4. Predict the mean proportion of insects killed for a range of dosage and for each type of insecticide, together with their 90% confidence intervals, using the logistic model obtained in (1). Plot the resulting confidence band together with the raw data, faceted with insecticide type.
+
+5. Find the 90% effective dose for killing the insects, for each type of insecticides (Hint: you will have to run `LC_logit()` once for each type of insecticides)
+
+
+## Exercise 6: classifying penguins
+
+Classify the penguins into Gentoo and non-Gentoo. Pick bill length and bill depth as predictor (explanatory variables) and construct the decision boundary for classifying new observations. Also calculate the misclassification rate for existing observations.
+
+
+## (Optional) Feedback questions
+
+1. Are there any topic(s) from this week that still confuse you?
+
+2. Which activities work and which doesn't? What do you want to see change and what do you want to keep?
+
