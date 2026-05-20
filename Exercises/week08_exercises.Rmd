@@ -14,6 +14,31 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 
+## Week 7 Exercises 5: LMM estimation on rat pups
+
+In a study of rat pup, each litter is randomly assigned to a treatment level (control, low, high), and the birth weight and sex of each pup is measured. In addition, the weight of the litter prior to birth is also measured.
+
+```{r}
+data(RatPupWeight, package="nlme")
+ratpup <- as.data.frame(RatPupWeight) |> mutate(
+  Litter = factor(Litter, ordered=FALSE), 
+  Treatment = factor(Treatment, ordered=FALSE)
+) 
+
+glimpse(ratpup)
+```
+
+We'll treat the the birth weight (`weight`) as response variable, and take the treatment of litter, litter size, and sex of pup as fixed factor. Finally, we'll consider the litter as random factor.
+
+1. Fit a random intercept model in which there is no interaction between the fixed factors, and obtain its summary information
+
+2. Which fixed-effect variables are statistically significant? (Hint: recall that significance of Treatment should be judged as a whole rather than as 2 separate effects)
+
+3. Refit a new model where the effect of sex is also affected by the random factor of litter, and print its summary
+
+4. How does the random effect on the intercept correlates with the random effect on sex in this new model? Illustrate the situation by making a scatter plot of the random effect coefficients
+
+
 ## Exercise 1: LMM model selection on rat pup dataset
 
 Consider again the rat pup dataset. We'll perform model selection in the following order:
@@ -39,7 +64,7 @@ glimpse(ratpup)
 
 ## Exercise 2: LMM diagnostics on rat pup dataset
 
-For the final model you obtained in Exercise 4,
+For the final model you obtained in Exercise 1,
 
 1. Plot the conditional residuals against the fitted value.
 
@@ -65,35 +90,6 @@ ratpup <- as.data.frame(RatPupWeight) |> mutate(
 1. Fix litter size at the median. For each combination sex and Treatment, and for an unspecified (and possibly previously unobserved) litter, predict the mean pup weight and provide its uncertainty. Visualize the result in a plot with error bar
 
 2. Suppose the female rat producing litter #5 was latter given a low treatment dose and gave birth to 7 pups (i.e., `Lsize` = 7). What is the range of birth weights of rat pup (covering up to 95% chance) expected of each sex? Again visualize the result with a plot.
-
-
-## Exercise 4: Going beyond linear model
-
-Consider the plots of the 2 datasets shown in the files `glm_dataset_a.png` and `glm_dataset_b.png`, where y is the outcome variable and x is a continuous explanatory variable. Explain why linear regression is a bad choice for modeling the data.
-
-
-## Exercise 5: insecticides, take 1
-
-An experiment exposed batches of insects to various deposits (in mg) of insecticides. The proportion of insects 𝑦 killed after six days of exposure in each batch of size 𝑚 is potentially a function of the dose of insecticide and the type of insecticide. The dataset is included in the file insectsicides.csv in the data folder.
-
-```{r}
-insects_raw <- read_csv("data/insecticides.csv")
-```
-
-1. Perform a logistic regression to investigate the dependence of proportion of insects killed with (the log of) the amount of deposit and the type of insecticide. Ignore the interaction between the two for the time being.
-
-2. Is the dosage statistically significant? Is the difference between the type of insecticide statistically significant? (Again, to answer the second question you have to treat the variable as a whole)
-
-3. By what factor would the odds change when the dosage is doubled?
-
-4. Predict the mean proportion of insects killed for a range of dosage and for each type of insecticide, together with their 90% confidence intervals, using the logistic model obtained in (1). Plot the resulting confidence band together with the raw data, faceted with insecticide type.
-
-5. Find the 90% effective dose for killing the insects, for each type of insecticides (Hint: you will have to run `LC_logit()` once for each type of insecticides)
-
-
-## Exercise 6: classifying penguins
-
-Classify the penguins into Gentoo and non-Gentoo. Pick bill length and bill depth as predictor (explanatory variables) and construct the decision boundary for classifying new observations. Also calculate the misclassification rate for existing observations.
 
 
 ## (Optional) Feedback questions
